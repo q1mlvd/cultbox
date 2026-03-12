@@ -63,7 +63,10 @@ export default function ProductCard({ product, index }: Props) {
               boxShadow: `0 0 20px ${product.nameColor}15`,
             }}
           >
-            {product.iconEmoji}
+            {product.iconUrl
+              ? <img src={product.iconUrl} alt={product.name} className="w-10 h-10 object-contain drop-shadow-lg" />
+              : product.iconEmoji
+            }
           </div>
           <div>
             <p className="text-xs uppercase tracking-widest font-medium mb-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>

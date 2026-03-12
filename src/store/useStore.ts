@@ -15,6 +15,7 @@ export interface Product {
   nameColor: string;
   gradient: string;
   iconEmoji: string;
+  iconUrl?: string;
   commands: { cmd: string; desc: string }[];
   tiers: PriceTier[];
   note?: string;
@@ -104,6 +105,7 @@ export const PRODUCTS: Product[] = [
   {
     id: "emerald",
     name: "EMERALD",
+    iconUrl: "https://funtime.su/assets/img/items/70.png",
     nameColor: "#34d399",
     gradient: "from-emerald-500 via-green-700 to-emerald-900",
     iconEmoji: "🟢",
@@ -121,6 +123,7 @@ export const PRODUCTS: Product[] = [
   {
     id: "netherite",
     name: "NETHERITE",
+    iconUrl: "https://funtime.su/assets/img/items/201.png",
     nameColor: "#a78bfa",
     gradient: "from-slate-600 via-purple-900 to-slate-900",
     iconEmoji: "🔱",
