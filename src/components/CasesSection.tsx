@@ -233,9 +233,7 @@ function CaseCard({ c, index }: { c: Case; index: number }) {
               <div>
                 <p className="text-xs mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>Цена</p>
                 <div className="flex items-center gap-2">
-                  <span className="text-xl font-black text-white">{c.priceUah} ₴</span>
-                  <span style={{ color: "rgba(255,255,255,0.2)" }}>или</span>
-                  <span className="text-xl font-black" style={{ color: "#4ade80" }}>{c.priceKultiki}к</span>
+                  <span className="text-xl font-black text-white">{c.priceUah} грн</span>
                 </div>
               </div>
               <motion.button
