@@ -268,7 +268,7 @@ function CaseCard({ c, index }: { c: Case; index: number }) {
           className="absolute inset-0 rounded-2xl flex flex-col p-5"
           style={{
             backfaceVisibility: "hidden",
-            rotateY: "180deg",
+            transform: "rotateY(180deg)",
             background: "linear-gradient(160deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
             border: `1px solid ${c.color}22`,
           }}
