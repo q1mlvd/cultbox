@@ -150,6 +150,21 @@ const CASES: Case[] = [
 
 function CaseCard({ c, index }: { c: Case; index: number }) {
   const [flipped, setFlipped] = useState(false);
+  const { setSelectedProduct, setSelectedTier, setIsModalOpen } = useStore();
+
+  const handleBuy = () => {
+    setSelectedProduct({
+      id: c.id,
+      name: c.name,
+      nameColor: c.color,
+      gradient: c.gradient,
+      iconEmoji: c.icon,
+      commands: [],
+      tiers: [{ duration: "forever", label: "Разово", price: c.priceUah }],
+    });
+    setSelectedTier({ duration: "forever", label: "Разово", price: c.priceUah });
+    setIsModalOpen(true);
+  };
 
   return (
     <motion.div
@@ -233,7 +248,7 @@ function CaseCard({ c, index }: { c: Case; index: number }) {
               <div>
                 <p className="text-xs mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>Цена</p>
                 <div className="flex items-center gap-2">
-                  <span className="text-xl font-black text-white">{c.priceUah} грн</span>
+                  <span className="text-xl font-black text-white">{c.priceUah} ₴</span>
                 </div>
               </div>
               <motion.button
@@ -249,6 +264,7 @@ function CaseCard({ c, index }: { c: Case; index: number }) {
             <motion.button
               whileHover={{ scale: 1.03, boxShadow: `0 0 30px ${c.color}55` }}
               whileTap={{ scale: 0.97 }}
+              onClick={handleBuy}
               className="w-full py-3.5 rounded-xl font-black text-sm flex items-center justify-center gap-2"
               style={{
                 background: `linear-gradient(135deg, ${c.color}cc, ${c.color}88)`,

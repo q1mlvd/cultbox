@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useStore } from "@/store/useStore";
+import CheckoutModal from "./CheckoutModal";
 
 const MIN = 10;
 const MAX = 2000;
@@ -20,11 +22,26 @@ function getBonus(uah: number) {
 
 export default function CurrencySection() {
   const [amount, setAmount] = useState(100);
+  const { setSelectedProduct, setSelectedTier, setIsModalOpen } = useStore();
 
   const bonus = useMemo(() => getBonus(amount), [amount]);
   const baseKultiki = amount * RATE;
   const bonusKultiki = bonus ? Math.floor(baseKultiki * (bonus.percent / 100)) : 0;
   const totalKultiki = baseKultiki + bonusKultiki;
+
+  const handleBuy = () => {
+    setSelectedProduct({
+      id: "kultiki",
+      name: `Культики × ${totalKultiki.toLocaleString("ru")}`,
+      nameColor: "#4ade80",
+      gradient: "from-green-500 via-emerald-600 to-green-900",
+      iconEmoji: "🪙",
+      commands: [],
+      tiers: [{ duration: "forever", label: "Разово", price: amount }],
+    });
+    setSelectedTier({ duration: "forever", label: "Разово", price: amount });
+    setIsModalOpen(true);
+  };
 
   const sliderPercent = ((amount - MIN) / (MAX - MIN)) * 100;
 
@@ -208,7 +225,8 @@ export default function CurrencySection() {
               <motion.button
                 whileHover={{ scale: 1.04, boxShadow: "0 0 40px rgba(74,222,128,0.45)" }}
                 whileTap={{ scale: 0.96 }}
-                className="shimmer-btn w-full py-4 rounded-2xl font-black text-white flex items-center justify-center gap-2 text-base"
+                onClick={handleBuy}
+              className="shimmer-btn w-full py-4 rounded-2xl font-black text-white flex items-center justify-center gap-2 text-base"
                 style={{ boxShadow: "0 0 25px rgba(74,222,128,0.3)" }}
               >
                 КУПИТЬ →
@@ -270,6 +288,7 @@ export default function CurrencySection() {
           cursor: pointer;
         }
       `}</style>
+      <CheckoutModal />
     </section>
   );
 }
