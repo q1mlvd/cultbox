@@ -109,7 +109,15 @@ export default function CheckoutModal() {
         const res = await fetch("/api/cryptobot", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amount: selectedTier.price, description, fiat_currency: fiatCurrency }),
+          body: JSON.stringify({
+            amount: selectedTier.price,
+            description,
+            fiat_currency: fiatCurrency,
+            nick,
+            email,
+            product: selectedProduct.name,
+            tier: selectedTier.label,
+          }),
         });
         const { pay_url, error } = await res.json();
         if (error) throw new Error(error);

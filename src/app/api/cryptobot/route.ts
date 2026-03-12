@@ -8,7 +8,7 @@ const RATES: Record<string, number> = {
 };
 
 export async function POST(req: NextRequest) {
-  const { amount, description, fiat_currency = "UAH" } = await req.json();
+  const { amount, description, fiat_currency = "UAH", nick, email, product, tier } = await req.json();
 
   const token = process.env.CRYPTOBOT_TOKEN;
   if (!token) {
@@ -16,7 +16,10 @@ export async function POST(req: NextRequest) {
   }
 
   const rate = RATES[fiat_currency] ?? 1;
-  const convertedAmount = (amount * rate).toFixed(2);
+  const convertedAmount = (amount * rate).toFixed(fiat_currency === "UAH" || fiat_currency === "RUB" ? 0 : 2);
+
+  // Store order metadata in invoice payload (returned in webhook)
+  const payload = JSON.stringify({ nick, email, product, tier, uah: amount });
 
   const res = await fetch("https://pay.crypt.bot/api/createInvoice", {
     method: "POST",
@@ -29,6 +32,7 @@ export async function POST(req: NextRequest) {
       fiat: fiat_currency,
       amount: convertedAmount,
       description,
+      payload,
       expires_in: 3600,
     }),
   });
