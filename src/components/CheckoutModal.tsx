@@ -5,6 +5,25 @@ import { useState } from "react";
 import { useStore, PriceTier } from "@/store/useStore";
 
 type PaymentMethod = "liqpay" | "cryptobot" | null;
+type FiatCurrency = "UAH" | "USD" | "EUR" | "RUB";
+
+const RATES: Record<FiatCurrency, number> = {
+  UAH: 1,
+  USD: 1 / 41,
+  EUR: 1 / 45,
+  RUB: 3.3,
+};
+
+const CURRENCY_LABELS: Record<FiatCurrency, string> = {
+  UAH: "₴ Гривна",
+  USD: "$ Доллар",
+  EUR: "€ Евро",
+  RUB: "₽ Рубль",
+};
+
+const CURRENCY_SYMBOLS: Record<FiatCurrency, string> = {
+  UAH: "₴", USD: "$", EUR: "€", RUB: "₽",
+};
 
 export default function CheckoutModal() {
   const {
@@ -19,6 +38,7 @@ export default function CheckoutModal() {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(null);
+  const [fiatCurrency, setFiatCurrency] = useState<FiatCurrency>("UAH");
   const [isLoading, setIsLoading] = useState(false);
   const [nickError, setNickError] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -27,6 +47,7 @@ export default function CheckoutModal() {
     if (isLoading) return;
     setIsModalOpen(false);
     setPaymentMethod(null);
+    setFiatCurrency("UAH");
     setAgreeTerms(false);
     setAgreePrivacy(false);
     setEmail("");
@@ -88,7 +109,7 @@ export default function CheckoutModal() {
         const res = await fetch("/api/cryptobot", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amount: selectedTier.price, description }),
+          body: JSON.stringify({ amount: selectedTier.price, description, fiat_currency: fiatCurrency }),
         });
         const { pay_url, error } = await res.json();
         if (error) throw new Error(error);
@@ -306,6 +327,47 @@ export default function CheckoutModal() {
                         {paymentMethod === "cryptobot" && <div className="w-2 h-2 rounded-full bg-white" />}
                       </div>
                     </motion.button>
+
+                    {/* Currency selector — shown only when CryptoBot selected */}
+                    <AnimatePresence>
+                      {paymentMethod === "cryptobot" && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="pt-1">
+                            <p className="text-xs text-slate-400 mb-2">Валюта оплаты</p>
+                            <div className="grid grid-cols-4 gap-1.5">
+                              {(Object.keys(CURRENCY_LABELS) as FiatCurrency[]).map((cur) => {
+                                const price = selectedTier
+                                  ? (selectedTier.price * RATES[cur]).toFixed(cur === "UAH" ? 0 : cur === "RUB" ? 0 : 2)
+                                  : "—";
+                                return (
+                                  <button
+                                    key={cur}
+                                    onClick={() => setFiatCurrency(cur)}
+                                    className={`py-2 px-1.5 rounded-xl border-2 text-center transition-all ${
+                                      fiatCurrency === cur
+                                        ? "border-blue-500 bg-blue-50"
+                                        : "border-slate-200 hover:border-blue-200"
+                                    }`}
+                                  >
+                                    <p className="text-base font-black" style={{ color: fiatCurrency === cur ? "#3b82f6" : "#64748b" }}>
+                                      {CURRENCY_SYMBOLS[cur]}
+                                    </p>
+                                    <p className="text-[10px] font-bold" style={{ color: fiatCurrency === cur ? "#3b82f6" : "#94a3b8" }}>
+                                      {price}
+                                    </p>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
 
