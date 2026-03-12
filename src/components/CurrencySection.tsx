@@ -29,7 +29,7 @@ export default function CurrencySection() {
   const sliderPercent = ((amount - MIN) / (MAX - MIN)) * 100;
 
   return (
-    <section className="py-20 px-4" style={{ background: "#07090f" }}>
+    <section id="currency" className="py-20 px-4" style={{ background: "#07090f" }}>
       <div className="max-w-4xl mx-auto">
 
         {/* Header */}
