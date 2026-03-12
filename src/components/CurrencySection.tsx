@@ -97,7 +97,11 @@ export default function CurrencySection() {
                   boxShadow: "0 0 40px rgba(74,222,128,0.15)",
                 }}
               >
-                🪙
+                <img
+                  src="https://wellmine.fun/api-backend/static/shops/130/products/431c6ef1-74a6-4d21-8141-13f14f281699"
+                  alt="Культики"
+                  className="w-16 h-16 object-contain drop-shadow-lg"
+                />
               </motion.div>
             </div>
 
