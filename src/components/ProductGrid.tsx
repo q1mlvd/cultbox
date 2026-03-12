@@ -28,7 +28,7 @@ export default function ProductGrid() {
             className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-5 text-xs font-semibold uppercase tracking-widest"
             style={{ background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)", color: "#4ade80" }}
           >
-            ✦ Привилегии
+            Привилегии
           </div>
           <h2 className="text-4xl md:text-5xl font-black text-white mb-3">
             Магазин доната

@@ -176,7 +176,7 @@ export default function HeroSection() {
               className="shimmer-btn flex items-center gap-2.5 px-8 py-4 rounded-2xl font-black text-white text-base"
               style={{ boxShadow: "0 0 25px rgba(74,222,128,0.3)" }}
             >
-              <span>🛒</span> Открыть магазин
+              Открыть магазин
             </motion.a>
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -266,17 +266,16 @@ export default function HeroSection() {
             {/* Stats grid */}
             <div className="grid grid-cols-2 gap-2.5 mb-5">
               {[
-                { label: "Версия", value: "1.20.6", icon: "🎮" },
-                { label: "Режим",  value: "BoxPvP",  icon: "⚔️" },
-                { label: "Карта",  value: "250×250", icon: "🗺️" },
-                { label: "PvP",    value: "Вкл.",    icon: "🔥" },
+                { label: "Версия", value: "1.20.6" },
+                { label: "Режим",  value: "BoxPvP"  },
+                { label: "Карта",  value: "250×250" },
+                { label: "PvP",    value: "Вкл."    },
               ].map((item) => (
                 <div
                   key={item.label}
                   className="rounded-xl p-3"
                   style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
                 >
-                  <p className="text-sm mb-0.5">{item.icon}</p>
                   <p className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>{item.label}</p>
                   <p className="text-sm font-bold text-white">{item.value}</p>
                 </div>

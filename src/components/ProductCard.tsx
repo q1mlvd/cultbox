@@ -87,7 +87,7 @@ export default function ProductCard({ product, index }: Props) {
         {/* Commands */}
         <div className="mb-5 flex-1">
           <p className="text-xs uppercase tracking-widest font-semibold mb-3" style={{ color: "rgba(255,255,255,0.3)" }}>
-            ⌨ Команды
+            Команды
           </p>
           <ul className="space-y-2">
             {product.commands.map((c, i) => (
@@ -110,7 +110,7 @@ export default function ProductCard({ product, index }: Props) {
         {/* Pricing tiers */}
         <div className="mb-5">
           <p className="text-xs uppercase tracking-widest font-semibold mb-3" style={{ color: "rgba(255,255,255,0.3)" }}>
-            ◈ Цены
+            Цены
           </p>
           <div className="grid grid-cols-3 gap-2">
             {product.tiers.map((tier) => (
@@ -147,7 +147,7 @@ export default function ProductCard({ product, index }: Props) {
             boxShadow: `0 4px 20px ${product.nameColor}33`,
           }}
         >
-          🛒 Купить от {minPrice} ₴
+          Купить от {minPrice} ₴
         </motion.button>
       </div>
     </motion.div>

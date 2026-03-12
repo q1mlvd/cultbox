@@ -231,7 +231,7 @@ function CaseCard({ c, index }: { c: Case; index: number }) {
           {/* Contents */}
           <div className="px-5 py-4 flex-1">
             <p className="text-xs uppercase tracking-widest font-semibold mb-3" style={{ color: "rgba(255,255,255,0.3)" }}>
-              🎁 Содержимое
+              Содержимое
             </p>
             <ul className="space-y-1.5">
               {groupContentLines(c.contents).map((line, i) => (
@@ -280,7 +280,7 @@ function CaseCard({ c, index }: { c: Case; index: number }) {
                 boxShadow: `0 4px 20px ${c.color}33`,
               }}
             >
-              📦 Купить кейс
+              Купить кейс
             </motion.button>
           </div>
         </div>
@@ -322,7 +322,7 @@ function CaseCard({ c, index }: { c: Case; index: number }) {
 
           <div className="mt-4 rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
             <p className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
-              💡 Нажмите <span style={{ color: c.color, fontWeight: 700 }}>ПКМ</span>, чтобы получить ссылку на покупку
+              Нажмите <span style={{ color: c.color, fontWeight: 700 }}>ПКМ</span>, чтобы получить ссылку на покупку
             </p>
           </div>
         </div>
@@ -371,7 +371,7 @@ export default function CasesSection() {
             className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-5 text-xs font-semibold uppercase tracking-widest"
             style={{ background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.2)", color: "#a78bfa" }}
           >
-            📦 Кейсы
+            Кейсы
           </div>
           <h2 className="text-4xl md:text-5xl font-black text-white mb-3">
             Открой кейс

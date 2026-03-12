@@ -79,7 +79,7 @@ export default function Navbar() {
             className="shimmer-btn px-5 py-2.5 rounded-xl font-bold text-sm text-white shadow-lg"
             style={{ boxShadow: "0 0 20px rgba(74,222,128,0.3)" }}
           >
-            🛒 Магазин
+            Магазин
           </motion.a>
         </div>
 

@@ -11,7 +11,6 @@ export default function CheckoutModal() {
     isModalOpen, setIsModalOpen,
     selectedProduct, selectedTier, setSelectedTier,
     nick, setNick,
-    paymentMethod, setPaymentMethod,
   } = useStore();
 
   const [email, setEmail] = useState("");
@@ -27,7 +26,6 @@ export default function CheckoutModal() {
   const handleClose = () => {
     if (!isLoading) {
       setIsModalOpen(false);
-      setPaymentMethod(null);
       setStep("form");
       setAgreeTerms(false);
       setAgreePrivacy(false);
@@ -56,14 +54,50 @@ export default function CheckoutModal() {
     setStep("payment");
   };
 
-  const handlePayment = async () => {
-    if (!paymentMethod) return;
+  const handleLiqPay = async () => {
+    if (!selectedProduct || !selectedTier) return;
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 2500));
-    setIsModalOpen(false);
-    setIsLoading(false);
-    setStep("form");
-    router.push("/success");
+    try {
+      const orderId = `${selectedProduct.id}_${Date.now()}`;
+      const res = await fetch("/api/liqpay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: selectedTier.price,
+          description: `${selectedProduct.name} ${selectedTier.label} для ${nick}`,
+          order_id: orderId,
+        }),
+      });
+      const { data, signature, error } = await res.json();
+      if (error) throw new Error(error);
+
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = "https://www.liqpay.ua/api/3/checkout";
+
+      const dataInput = document.createElement("input");
+      dataInput.type = "hidden";
+      dataInput.name = "data";
+      dataInput.value = data;
+
+      const sigInput = document.createElement("input");
+      sigInput.type = "hidden";
+      sigInput.name = "signature";
+      sigInput.value = signature;
+
+      form.appendChild(dataInput);
+      form.appendChild(sigInput);
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+
+      setIsModalOpen(false);
+      setStep("form");
+    } catch {
+      alert("Ошибка при создании платежа. Попробуйте позже.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const canProceed = nick.length >= 3 && email.includes("@") && agreeTerms && agreePrivacy;
@@ -121,7 +155,7 @@ export default function CheckoutModal() {
                     className="px-6 py-5 space-y-4"
                   >
                     {/* Tier selector */}
-                    {selectedProduct && (
+                    {selectedProduct.tiers.length > 1 && (
                       <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-2">Выберите срок</label>
                         <div className="grid grid-cols-3 gap-2">
@@ -144,8 +178,11 @@ export default function CheckoutModal() {
                     )}
 
                     {/* Warning banner */}
-                    <div className="bg-green-500 text-white rounded-xl p-3.5 flex gap-3">
-                      <span className="text-lg flex-shrink-0">ℹ</span>
+                    <div className="bg-green-500 text-white rounded-xl p-3.5 flex gap-3 items-start">
+                      <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" strokeWidth="2"/>
+                        <path d="M12 8v4m0 4h.01" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
                       <div>
                         <p className="font-bold text-sm">Внимание</p>
                         <p className="text-sm text-green-50">
@@ -156,9 +193,7 @@ export default function CheckoutModal() {
 
                     {/* Nick */}
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                        Ваш ник
-                      </label>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">Ваш ник</label>
                       <input
                         type="text"
                         value={nick}
@@ -175,9 +210,7 @@ export default function CheckoutModal() {
 
                     {/* Email */}
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                        Адрес электронной почты
-                      </label>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">Email</label>
                       <input
                         type="email"
                         value={email}
@@ -213,7 +246,7 @@ export default function CheckoutModal() {
                               value={coupon}
                               onChange={(e) => setCoupon(e.target.value.toUpperCase())}
                               placeholder="Введите купон..."
-                              className="w-full mt-2 px-4 py-3 border border-slate-200 focus:border-green-400 rounded-xl text-sm outline-none transition-all focus:shadow-[0_0_0_3px_rgba(34,197,94,0.15)]"
+                              className="w-full mt-2 px-4 py-3 border border-slate-200 focus:border-green-400 rounded-xl text-sm outline-none transition-all text-slate-900 bg-white focus:shadow-[0_0_0_3px_rgba(34,197,94,0.15)]"
                             />
                           </motion.div>
                         )}
@@ -237,34 +270,24 @@ export default function CheckoutModal() {
                             : "bg-slate-100 text-slate-400 cursor-not-allowed"
                         }`}
                       >
-                        ПЕРЕЙТИ К ОПЛАТЕ
-                        <span className="text-base">🧮</span>
+                        Перейти к оплате
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
                       </motion.button>
                     </div>
 
                     {/* Checkboxes */}
                     <div className="space-y-2 pt-1">
                       {[
-                        {
-                          checked: agreeTerms,
-                          set: setAgreeTerms,
-                          text: "Я соглашаюсь со всеми условиями ",
-                          link: "пользовательского соглашения",
-                        },
-                        {
-                          checked: agreePrivacy,
-                          set: setAgreePrivacy,
-                          text: "Я соглашаюсь с ",
-                          link: "Политикой обработки персональных данных",
-                        },
+                        { checked: agreeTerms, set: setAgreeTerms, text: "Я соглашаюсь со всеми условиями ", link: "пользовательского соглашения" },
+                        { checked: agreePrivacy, set: setAgreePrivacy, text: "Я соглашаюсь с ", link: "Политикой обработки персональных данных" },
                       ].map((item, i) => (
                         <label key={i} className="flex items-start gap-2.5 cursor-pointer group">
                           <div
                             onClick={() => item.set(!item.checked)}
                             className={`w-4 h-4 mt-0.5 flex-shrink-0 rounded border-2 flex items-center justify-center transition-all ${
-                              item.checked
-                                ? "bg-green-500 border-green-500"
-                                : "border-slate-300 group-hover:border-green-400"
+                              item.checked ? "bg-green-500 border-green-500" : "border-slate-300 group-hover:border-green-400"
                             }`}
                           >
                             {item.checked && (
@@ -275,9 +298,7 @@ export default function CheckoutModal() {
                           </div>
                           <span className="text-xs text-slate-500 leading-relaxed">
                             {item.text}
-                            <span className="text-green-600 font-medium hover:underline cursor-pointer">
-                              {item.link}
-                            </span>
+                            <span className="text-green-600 font-medium hover:underline cursor-pointer">{item.link}</span>
                           </span>
                         </label>
                       ))}
@@ -291,7 +312,6 @@ export default function CheckoutModal() {
                     exit={{ opacity: 0, x: 20 }}
                     className="px-6 py-5"
                   >
-                    {/* Back + summary */}
                     <button
                       onClick={() => setStep("form")}
                       className="text-slate-400 hover:text-slate-600 text-sm flex items-center gap-1 mb-4 transition-colors"
@@ -299,6 +319,7 @@ export default function CheckoutModal() {
                       ← Назад
                     </button>
 
+                    {/* Summary */}
                     <div className="bg-slate-50 rounded-xl p-4 mb-5 border border-slate-100 text-sm space-y-2">
                       <div className="flex justify-between">
                         <span className="text-slate-500">Игрок</span>
@@ -309,7 +330,7 @@ export default function CheckoutModal() {
                         <span className="font-medium text-slate-700 truncate max-w-[200px]">{email}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-500">Привилегия</span>
+                        <span className="text-slate-500">Товар</span>
                         <span className="font-bold" style={{ color: selectedProduct.nameColor }}>
                           {selectedProduct.name}
                         </span>
@@ -320,50 +341,18 @@ export default function CheckoutModal() {
                       </div>
                     </div>
 
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Способ оплаты</p>
-                    <div className="space-y-2 mb-5">
-                      {[
-                        { id: "monobank" as const, icon: "🏦", bg: "from-slate-800 to-slate-900", name: "Monobank", desc: "Карта / Apple Pay / Google Pay" },
-                        { id: "cryptobot" as const, icon: "₿", bg: "from-blue-500 to-blue-700", name: "CryptoBot", desc: "USDT, TON, BTC и другое" },
-                      ].map((method) => (
-                        <motion.button
-                          key={method.id}
-                          whileHover={{ scale: 1.015 }}
-                          whileTap={{ scale: 0.985 }}
-                          onClick={() => setPaymentMethod(method.id)}
-                          className={`w-full p-3.5 rounded-xl border-2 text-left flex items-center gap-3 transition-all ${
-                            paymentMethod === method.id
-                              ? "border-green-500 bg-green-50"
-                              : "border-slate-200 hover:border-green-300"
-                          }`}
-                        >
-                          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${method.bg} flex items-center justify-center text-white font-bold flex-shrink-0`}>
-                            {method.icon}
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-bold text-slate-800 text-sm">{method.name}</p>
-                            <p className="text-slate-500 text-xs">{method.desc}</p>
-                          </div>
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                            paymentMethod === method.id ? "border-green-500 bg-green-500" : "border-slate-300"
-                          }`}>
-                            {paymentMethod === method.id && <div className="w-2 h-2 rounded-full bg-white" />}
-                          </div>
-                        </motion.button>
-                      ))}
-                    </div>
-
+                    {/* LiqPay button */}
                     <motion.button
-                      whileHover={paymentMethod && !isLoading ? { scale: 1.02 } : {}}
-                      whileTap={paymentMethod && !isLoading ? { scale: 0.98 } : {}}
-                      onClick={handlePayment}
-                      disabled={!paymentMethod || isLoading}
-                      className={`w-full py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all ${
-                        paymentMethod && !isLoading
-                          ? "bg-green-500 hover:bg-green-600 text-white shadow-lg"
-                          : "bg-slate-100 text-slate-400 cursor-not-allowed"
-                      }`}
-                      style={paymentMethod && !isLoading ? { boxShadow: "0 0 20px rgba(34,197,94,0.35)" } : {}}
+                      whileHover={!isLoading ? { scale: 1.02 } : {}}
+                      whileTap={!isLoading ? { scale: 0.98 } : {}}
+                      onClick={handleLiqPay}
+                      disabled={isLoading}
+                      className="w-full py-4 rounded-xl font-bold text-base flex items-center justify-center gap-3 transition-all"
+                      style={{
+                        background: isLoading ? "#e2e8f0" : "linear-gradient(135deg, #009f2e, #00cc3a)",
+                        color: isLoading ? "#94a3b8" : "#fff",
+                        boxShadow: isLoading ? "none" : "0 0 25px rgba(0,180,50,0.35)",
+                      }}
                     >
                       {isLoading ? (
                         <>
@@ -372,13 +361,26 @@ export default function CheckoutModal() {
                             transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
                             className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
                           />
-                          Обработка...
+                          Перенаправление...
                         </>
                       ) : (
-                        "💳 Оплатить →"
+                        <>
+                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <rect x="1" y="4" width="22" height="16" rx="2" strokeWidth="2"/>
+                            <path d="M1 10h22" strokeWidth="2"/>
+                          </svg>
+                          Оплатить через LiqPay
+                        </>
                       )}
                     </motion.button>
-                    <p className="text-center text-xs text-slate-400 mt-2">🔒 Защищённая транзакция</p>
+
+                    <div className="flex items-center justify-center gap-1.5 mt-3">
+                      <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <rect x="3" y="11" width="18" height="11" rx="2" strokeWidth="2"/>
+                        <path d="M7 11V7a5 5 0 0110 0v4" strokeWidth="2"/>
+                      </svg>
+                      <p className="text-center text-xs text-slate-400">Защищённая транзакция · LiqPay</p>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
