@@ -9,6 +9,7 @@ interface Case {
   id: string;
   name: string;
   icon: string;
+  iconUrl?: string;
   color: string;
   gradient: string;
   rarity: string;
@@ -24,6 +25,7 @@ const CASES: Case[] = [
     id: "allornoting",
     name: "Всё или ничего",
     icon: "☠️",
+    iconUrl: "/AllIn.png",
     color: "#ef4444",
     gradient: "from-red-600 via-rose-700 to-red-900",
     rarity: "Легендарный",
@@ -48,6 +50,7 @@ const CASES: Case[] = [
     id: "privileges",
     name: "Кейс с Привилегиями",
     icon: "🏆",
+    iconUrl: "/Donate.png",
     color: "#22d3ee",
     gradient: "from-cyan-500 via-teal-600 to-cyan-900",
     rarity: "Эпический",
@@ -69,6 +72,7 @@ const CASES: Case[] = [
     id: "titles",
     name: "Кейс с Титулами",
     icon: "👑",
+    iconUrl: "/titule.png",
     color: "#a78bfa",
     gradient: "from-violet-500 via-purple-700 to-violet-900",
     rarity: "Редкий",
@@ -95,6 +99,7 @@ const CASES: Case[] = [
     id: "items",
     name: "Кейс с Предметами",
     icon: "⚔️",
+    iconUrl: "/pridmety.png",
     color: "#f97316",
     gradient: "from-orange-500 via-amber-600 to-orange-900",
     rarity: "Необычный",
@@ -123,6 +128,7 @@ const CASES: Case[] = [
     id: "kits",
     name: "Кейс с Китами",
     icon: "🎒",
+    iconUrl: "/kits.png",
     color: "#60a5fa",
     gradient: "from-blue-500 via-blue-700 to-blue-900",
     rarity: "Редкий",
@@ -207,7 +213,9 @@ function CaseCard({ c, index }: { c: Case; index: number }) {
                 boxShadow: `0 0 20px ${c.color}20`,
               }}
             >
-              {c.icon}
+              {c.iconUrl
+                ? <img src={c.iconUrl} alt={c.name} className="w-full h-full object-contain p-1 drop-shadow-lg" />
+                : c.icon}
             </motion.div>
             <div className="flex-1 min-w-0">
               <div
