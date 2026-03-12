@@ -8,7 +8,7 @@ const links = [
   { label: "Культики",  href: "#currency" },
   { label: "Кейсы",     href: "#cases"    },
   { label: "Донат",     href: "#shop"     },
-  { label: "Поддержка", href: "#"         },
+  { label: "Поддержка", href: "https://t.me/CultBoxSupport_bot" },
 ];
 
 export default function Navbar() {
@@ -52,6 +52,8 @@ export default function Navbar() {
               key={link.label}
               href={link.href}
               onClick={() => setActive(i)}
+              target={link.href.startsWith("https") ? "_blank" : undefined}
+              rel={link.href.startsWith("https") ? "noopener noreferrer" : undefined}
               className="relative px-4 py-2 rounded-xl text-sm font-semibold transition-all"
               style={{ color: active === i ? "#4ade80" : "rgba(255,255,255,0.6)" }}
             >
@@ -109,6 +111,8 @@ export default function Navbar() {
                   key={link.label}
                   href={link.href}
                   onClick={() => { setActive(i); setMenuOpen(false); }}
+                  target={link.href.startsWith("https") ? "_blank" : undefined}
+                  rel={link.href.startsWith("https") ? "noopener noreferrer" : undefined}
                   className="px-4 py-3 rounded-xl text-sm font-semibold transition-colors"
                   style={{ color: active === i ? "#4ade80" : "rgba(255,255,255,0.7)" }}
                 >
