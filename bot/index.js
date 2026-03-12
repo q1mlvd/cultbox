@@ -1,29 +1,52 @@
 require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
+const fs = require("fs");
+const path = require("path");
 
-const TOKEN = process.env.BOT_TOKEN;
-const ADMIN_IDS = (process.env.ADMIN_IDS || "").split(",").map(Number).filter(Boolean);
+const TOKEN    = process.env.BOT_TOKEN;
+const GROUP_ID = Number(process.env.GROUP_ID);
 
-if (!TOKEN || ADMIN_IDS.length === 0) {
-  console.error("❌ Укажи BOT_TOKEN и ADMIN_IDS в файле .env");
+if (!TOKEN || !GROUP_ID) {
+  console.error("❌ Укажи BOT_TOKEN и GROUP_ID в файле .env");
   process.exit(1);
 }
 
 const bot = new TelegramBot(TOKEN, { polling: true });
 
-// Map: message_id пересланного сообщения → chat_id пользователя
-const sessions = new Map();
+// ─────────────────────────────────────────
+// Хранилище сессий (файл)
+// ─────────────────────────────────────────
 
-const isAdmin = (id) => ADMIN_IDS.includes(id);
+const SESSIONS_FILE = path.join(__dirname, "sessions.json");
+
+function loadSessions() {
+  try {
+    if (fs.existsSync(SESSIONS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(SESSIONS_FILE, "utf-8"));
+      return {
+        userToTopic: new Map(Object.entries(data.userToTopic || {}).map(([k, v]) => [Number(k), v])),
+        topicToUser: new Map(Object.entries(data.topicToUser || {}).map(([k, v]) => [Number(k), Number(v)])),
+      };
+    }
+  } catch (e) {
+    console.error("Ошибка загрузки сессий:", e.message);
+  }
+  return { userToTopic: new Map(), topicToUser: new Map() };
+}
+
+function saveSessions() {
+  const data = {
+    userToTopic: Object.fromEntries(sessions.userToTopic),
+    topicToUser: Object.fromEntries(sessions.topicToUser),
+  };
+  fs.writeFileSync(SESSIONS_FILE, JSON.stringify(data, null, 2));
+}
+
+const sessions = loadSessions();
 
 // ─────────────────────────────────────────
 // Утилиты
 // ─────────────────────────────────────────
-
-function userName(from) {
-  if (from.username) return `@${from.username}`;
-  return [from.first_name, from.last_name].filter(Boolean).join(" ") || `ID ${from.id}`;
-}
 
 function escapeHtml(str) {
   return String(str)
@@ -32,10 +55,119 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;");
 }
 
-function notifyAllAdmins(text, options = {}) {
-  return Promise.all(
-    ADMIN_IDS.map((id) => bot.sendMessage(id, text, options))
-  );
+function getDisplayName(from) {
+  if (from.username) return `@${from.username}`;
+  return [from.first_name, from.last_name].filter(Boolean).join(" ") || `ID ${from.id}`;
+}
+
+// Создать тему в группе для нового пользователя
+async function getOrCreateTopic(userId, from) {
+  if (sessions.userToTopic.has(userId)) {
+    return sessions.userToTopic.get(userId);
+  }
+
+  const name = getDisplayName(from);
+  const topicColors = [0x6FB9F0, 0xFFD67E, 0xCB86DB, 0x8EEE98, 0xFF93B2, 0xFB6F5F];
+  const color = topicColors[userId % topicColors.length];
+
+  try {
+    const topic = await bot._request("createForumTopic", {
+      chat_id: GROUP_ID,
+      name: name.slice(0, 128),
+      icon_color: color,
+    });
+
+    const threadId = topic.message_thread_id;
+    sessions.userToTopic.set(userId, threadId);
+    sessions.topicToUser.set(threadId, userId);
+    saveSessions();
+
+    // Шапка темы
+    await bot.sendMessage(GROUP_ID,
+      `👤 <b>${escapeHtml(name)}</b>\n` +
+      `🆔 ID: <code>${userId}</code>\n` +
+      `📅 Первое обращение: ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Kiev" })}\n\n` +
+      `<i>Напишите ответ в этой теме — пользователь получит его в личке.</i>`,
+      { parse_mode: "HTML", message_thread_id: threadId }
+    );
+
+    return threadId;
+  } catch (err) {
+    console.error("Ошибка создания темы:", err.message);
+    return null;
+  }
+}
+
+// Получить тип контента сообщения
+function getContent(msg) {
+  if (msg.text)          return { type: "text",  value: msg.text };
+  if (msg.photo)         return { type: "photo", value: msg.photo, caption: msg.caption };
+  if (msg.document)      return { type: "doc",   value: msg.document, caption: msg.caption };
+  if (msg.voice)         return { type: "voice", value: msg.voice };
+  if (msg.video)         return { type: "video", value: msg.video, caption: msg.caption };
+  if (msg.sticker)       return { type: "sticker", value: msg.sticker };
+  if (msg.audio)         return { type: "audio", value: msg.audio, caption: msg.caption };
+  return { type: "unknown", value: null };
+}
+
+// Переслать сообщение пользователю
+async function forwardToUser(userId, msg) {
+  const c = getContent(msg);
+  const opts = { parse_mode: "HTML" };
+
+  switch (c.type) {
+    case "text":
+      return bot.sendMessage(userId,
+        `💬 <b>Ответ поддержки CultBox:</b>\n\n${escapeHtml(c.value)}`, opts);
+    case "photo":
+      return bot.sendPhoto(userId, c.value[c.value.length - 1].file_id,
+        { caption: c.caption ? `💬 ${escapeHtml(c.caption)}` : "💬 Поддержка CultBox", ...opts });
+    case "doc":
+      return bot.sendDocument(userId, c.value.file_id,
+        { caption: c.caption ? `💬 ${escapeHtml(c.caption)}` : undefined, ...opts });
+    case "voice":
+      return bot.sendVoice(userId, c.value.file_id);
+    case "video":
+      return bot.sendVideo(userId, c.value.file_id,
+        { caption: c.caption ? `💬 ${escapeHtml(c.caption)}` : undefined, ...opts });
+    case "sticker":
+      return bot.sendSticker(userId, c.value.file_id);
+    case "audio":
+      return bot.sendAudio(userId, c.value.file_id,
+        { caption: c.caption ? `💬 ${escapeHtml(c.caption)}` : undefined, ...opts });
+    default:
+      return bot.sendMessage(userId, "💬 Администратор прислал сообщение (тип не поддерживается).");
+  }
+}
+
+// Переслать сообщение пользователя в тему группы
+async function forwardToGroup(threadId, from, msg) {
+  const name = getDisplayName(from);
+  const c = getContent(msg);
+  const threadOpts = { message_thread_id: threadId, parse_mode: "HTML" };
+
+  switch (c.type) {
+    case "text":
+      return bot.sendMessage(GROUP_ID, escapeHtml(c.value), threadOpts);
+    case "photo":
+      return bot.sendPhoto(GROUP_ID, c.value[c.value.length - 1].file_id,
+        { caption: c.caption ? escapeHtml(c.caption) : undefined, ...threadOpts });
+    case "doc":
+      return bot.sendDocument(GROUP_ID, c.value.file_id,
+        { caption: c.caption ? escapeHtml(c.caption) : undefined, ...threadOpts });
+    case "voice":
+      return bot.sendVoice(GROUP_ID, c.value.file_id, { message_thread_id: threadId });
+    case "video":
+      return bot.sendVideo(GROUP_ID, c.value.file_id,
+        { caption: c.caption ? escapeHtml(c.caption) : undefined, ...threadOpts });
+    case "sticker":
+      return bot.sendSticker(GROUP_ID, c.value.file_id, { message_thread_id: threadId });
+    case "audio":
+      return bot.sendAudio(GROUP_ID, c.value.file_id,
+        { caption: c.caption ? escapeHtml(c.caption) : undefined, ...threadOpts });
+    default:
+      return bot.sendMessage(GROUP_ID, `<i>[Неизвестный тип сообщения]</i>`, threadOpts);
+  }
 }
 
 // ─────────────────────────────────────────
@@ -43,168 +175,73 @@ function notifyAllAdmins(text, options = {}) {
 // ─────────────────────────────────────────
 
 bot.onText(/\/start/, (msg) => {
-  const chatId = msg.chat.id;
+  if (msg.chat.id === GROUP_ID) return;
 
-  if (isAdmin(chatId)) {
-    return bot.sendMessage(chatId,
-      `🛡 <b>Панель администратора CultBox</b>\n\n` +
-      `Сюда будут приходить вопросы от игроков.\n\n` +
-      `<b>Как ответить:</b> сделай <b>Reply</b> на нужное сообщение — бот автоматически перешлёт ответ игроку.\n\n` +
-      `<i>Бот запущен и ожидает обращений ✅</i>`,
-      { parse_mode: "HTML" }
-    );
-  }
-
-  bot.sendMessage(chatId,
-    `👋 Привет! Это поддержка сервера <b>CultBox</b>.\n\n` +
-    `📝 Напиши свой вопрос — администратор свяжется с тобой в ближайшее время.\n\n` +
-    `<i>Постарайся описать проблему подробно: укажи свой ник, что случилось и когда.</i>`,
-    { parse_mode: "HTML" }
-  );
-});
-
-// ─────────────────────────────────────────
-// /help
-// ─────────────────────────────────────────
-
-bot.onText(/\/help/, (msg) => {
-  const chatId = msg.chat.id;
-
-  if (isAdmin(chatId)) {
-    return bot.sendMessage(chatId,
-      `📖 <b>Инструкция для администратора</b>\n\n` +
-      `• <b>Ответить игроку</b> — нажми Reply на его вопрос и напиши ответ\n` +
-      `• <b>/start</b> — приветственное сообщение\n` +
-      `• <b>/admins</b> — список администраторов\n\n` +
-      `<i>Все ответы отправляются напрямую игроку через бота.</i>`,
-      { parse_mode: "HTML" }
-    );
-  }
-
-  bot.sendMessage(chatId,
-    `ℹ️ <b>Помощь</b>\n\n` +
-    `Просто напиши свой вопрос в этот чат — я передам его администратору.\n\n` +
-    `⏱ Обычное время ответа: <b>до 24 часов</b>\n\n` +
-    `Если вопрос срочный, укажи это в сообщении.`,
-    { parse_mode: "HTML" }
-  );
-});
-
-// ─────────────────────────────────────────
-// /admins (только для админов)
-// ─────────────────────────────────────────
-
-bot.onText(/\/admins/, (msg) => {
-  if (!isAdmin(msg.chat.id)) return;
   bot.sendMessage(msg.chat.id,
-    `👥 <b>Администраторы бота</b>\n\n` +
-    ADMIN_IDS.map((id, i) => `${i + 1}. <code>${id}</code>`).join("\n"),
+    `👋 Привет! Это поддержка сервера <b>CultBox</b>.\n\n` +
+    `📝 Напиши свой вопрос — администратор ответит тебе в ближайшее время.\n\n` +
+    `<i>Укажи свой ник, что произошло и когда — это поможет решить проблему быстрее.</i>`,
     { parse_mode: "HTML" }
   );
 });
 
 // ─────────────────────────────────────────
-// Основной обработчик сообщений
+// Основной обработчик
 // ─────────────────────────────────────────
 
 bot.on("message", async (msg) => {
-  const chatId = msg.chat.id;
   if (msg.text?.startsWith("/")) return;
 
-  // ── АДМИН отвечает игроку ──────────────
-  if (isAdmin(chatId)) {
-    if (!msg.reply_to_message) {
-      return bot.sendMessage(chatId,
-        `ℹ️ Чтобы ответить игроку — сделай <b>Reply</b> на его вопрос.`,
-        { parse_mode: "HTML" }
-      );
-    }
+  const chatId = msg.chat.id;
 
-    const targetUserId = sessions.get(msg.reply_to_message.message_id);
+  // ── Сообщение из группы (ответ админа) ──
+  if (chatId === GROUP_ID) {
+    const threadId = msg.message_thread_id;
+    if (!threadId) return;
 
-    if (!targetUserId) {
-      return bot.sendMessage(chatId,
-        `⚠️ Не удалось найти игрока для этого сообщения.\n` +
-        `Возможно, бот был перезапущен и сессия устарела.`,
-        { parse_mode: "HTML" }
-      );
-    }
+    // Игнорируем системные сообщения и сообщения от самого бота
+    if (!msg.from || msg.from.is_bot) return;
+
+    const userId = sessions.topicToUser.get(threadId);
+    if (!userId) return;
 
     try {
-      await bot.sendMessage(targetUserId,
-        `💬 <b>Ответ администратора CultBox:</b>\n\n` +
-        `${escapeHtml(msg.text || "[медиа]")}`,
-        { parse_mode: "HTML" }
-      );
-
-      // Уведомляем обоих админов об отправке
-      const responderName = userName(msg.from);
-      await notifyAllAdmins(
-        `✅ Администратор ${escapeHtml(responderName)} ответил игроку (<code>${targetUserId}</code>)`,
-        { parse_mode: "HTML" }
-      );
-    } catch {
-      bot.sendMessage(chatId,
-        `❌ Не удалось доставить ответ — игрок мог заблокировать бота.`
+      await forwardToUser(userId, msg);
+    } catch (err) {
+      console.error("Ошибка отправки пользователю:", err.message);
+      bot.sendMessage(GROUP_ID,
+        `❌ Не удалось доставить сообщение пользователю <code>${userId}</code>.\nВозможно, он заблокировал бота.`,
+        { parse_mode: "HTML", message_thread_id: threadId }
       );
     }
     return;
   }
 
-  // ── ИГРОК пишет вопрос ──────────────────
-  const name = userName(msg.from);
-  const profileLink = msg.from.username
-    ? `<a href="https://t.me/${msg.from.username}">${escapeHtml(name)}</a>`
-    : `<b>${escapeHtml(name)}</b>`;
-
-  let content = "";
-  if (msg.text)          content = escapeHtml(msg.text);
-  else if (msg.photo)    content = `📷 <i>[Фото]</i>${msg.caption ? "\n" + escapeHtml(msg.caption) : ""}`;
-  else if (msg.document) content = `📎 <i>[Файл: ${escapeHtml(msg.document.file_name ?? "—")}]</i>`;
-  else if (msg.voice)    content = `🎤 <i>[Голосовое сообщение]</i>`;
-  else if (msg.sticker)  content = `😄 <i>[Стикер]</i>`;
-  else                   content = `<i>[Неизвестный тип]</i>`;
-
-  const now = new Date().toLocaleString("ru-RU", { timeZone: "Europe/Kiev" });
-
-  const adminText =
-    `📩 <b>Новый вопрос от игрока</b>\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n` +
-    `👤 Игрок: ${profileLink}\n` +
-    `🆔 ID: <code>${chatId}</code>\n` +
-    `🕐 Время: ${now}\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n\n` +
-    `${content}\n\n` +
-    `<i>💡 Reply на это сообщение, чтобы ответить</i>`;
-
+  // ── Сообщение от пользователя ────────────
   try {
-    // Отправляем каждому админу и сохраняем session для каждого
-    const results = await Promise.all(
-      ADMIN_IDS.map((id) => bot.sendMessage(id, adminText, { parse_mode: "HTML" }))
-    );
-    results.forEach((sent) => sessions.set(sent.message_id, chatId));
+    const threadId = await getOrCreateTopic(chatId, msg.from);
+    if (!threadId) {
+      return bot.sendMessage(chatId, "⚠️ Произошла ошибка. Попробуй позже.");
+    }
 
+    await forwardToGroup(threadId, msg.from, msg);
+
+    // Подтверждение только на первое сообщение (если тема только что создана)
+    const isNew = !sessions.userToTopic.has(chatId - 1);
     await bot.sendMessage(chatId,
-      `✅ <b>Вопрос получен!</b>\n\n` +
-      `Администратор ответит тебе в ближайшее время.\n` +
-      `<i>Обычно это занимает до 24 часов.</i>`,
+      `✅ <b>Сообщение получено!</b>\n\nАдминистратор ответит тебе в ближайшее время.`,
       { parse_mode: "HTML" }
     );
   } catch (err) {
-    console.error("Ошибка пересылки:", err.message);
-    bot.sendMessage(chatId,
-      `⚠️ Произошла ошибка при отправке. Попробуй ещё раз позже.`
-    );
+    console.error("Ошибка обработки сообщения:", err.message);
+    bot.sendMessage(chatId, "⚠️ Произошла ошибка. Попробуй ещё раз.");
   }
 });
-
-// ─────────────────────────────────────────
-// Polling errors
-// ─────────────────────────────────────────
 
 bot.on("polling_error", (err) => {
   console.error("Polling error:", err.message);
 });
 
 console.log(`🟢 CultBox Support Bot запущен`);
-console.log(`👥 Администраторы: ${ADMIN_IDS.join(", ")}`);
+console.log(`💬 Forum группа: ${GROUP_ID}`);
+console.log(`📁 Сессий загружено: ${sessions.userToTopic.size}`);
