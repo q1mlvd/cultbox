@@ -183,7 +183,7 @@ export default function CheckoutModal() {
                         value={email}
                         onChange={(e) => { setEmail(e.target.value); setEmailError(""); }}
                         placeholder="Адрес электронной почты"
-                        className={`w-full px-4 py-3 border rounded-xl text-sm outline-none transition-all ${
+                        className={`w-full px-4 py-3 border rounded-xl text-sm outline-none transition-all text-slate-900 bg-white ${
                           emailError
                             ? "border-red-400 focus:border-red-500"
                             : "border-slate-200 focus:border-green-400"

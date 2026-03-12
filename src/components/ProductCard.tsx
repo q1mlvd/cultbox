@@ -64,7 +64,7 @@ export default function ProductCard({ product, index }: Props) {
             }}
           >
             {product.iconUrl
-              ? <img src={product.iconUrl} alt={product.name} className="w-10 h-10 object-contain drop-shadow-lg" />
+              ? <img src={product.iconUrl} alt={product.name} className="w-full h-full object-contain p-1 drop-shadow-lg" />
               : product.iconEmoji
             }
           </div>
