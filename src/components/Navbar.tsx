@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const links = [
-  { label: "Главная",   href: "#hero"  },
-  { label: "Магазин",   href: "#shop"  },
-  { label: "Правила",   href: "#"      },
-  { label: "Поддержка", href: "#"      },
+  { label: "Главная",   href: "#hero"   },
+  { label: "Валюта",    href: "#shop"   },
+  { label: "Кейсы",     href: "#cases"  },
+  { label: "Магазин",   href: "#shop"   },
+  { label: "Поддержка", href: "#"       },
 ];
 
 export default function Navbar() {
