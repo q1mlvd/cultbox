@@ -116,7 +116,9 @@ export default function CheckoutModal() {
             nick,
             email,
             product: selectedProduct.name,
+            productId: selectedProduct.id,
             tier: selectedTier.label,
+            tierDuration: selectedTier.duration,
           }),
         });
         const { pay_url, error } = await res.json();
