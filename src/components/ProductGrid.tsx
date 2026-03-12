@@ -6,10 +6,10 @@ import CheckoutModal from "./CheckoutModal";
 import { motion } from "framer-motion";
 
 const SOCIALS = [
-  { label: "Discord",  emoji: "💬", href: "https://discord.gg/rxKA9JRS", color: "#5865F2", bg: "from-indigo-600 to-indigo-800" },
-  { label: "YouTube",  emoji: "▶️", href: "#",                            color: "#FF0000", bg: "from-red-600 to-red-800"    },
-  { label: "Telegram", emoji: "✈️", href: "#",                            color: "#29B6F6", bg: "from-sky-500 to-sky-700"    },
-  { label: "TikTok",   emoji: "🎵", href: "#",                            color: "#ffffff", bg: "from-slate-700 to-slate-900" },
+  { label: "Discord",  icon: "/Discord.png",  href: "https://discord.gg/rxKA9JRS", bg: "from-indigo-600 to-indigo-800" },
+  { label: "YouTube",  icon: "/youtube.png",  href: "#",                            bg: "from-red-600 to-red-800"       },
+  { label: "Telegram", icon: "/Telegram.webp",href: "#",                            bg: "from-sky-500 to-sky-700"       },
+  { label: "TikTok",   icon: "/tiktok.png",   href: "#",                            bg: "from-slate-700 to-slate-900"   },
 ];
 
 export default function ProductGrid() {
@@ -79,7 +79,7 @@ export default function ProductGrid() {
                 boxShadow: `0 8px 30px rgba(0,0,0,0.3)`,
               }}
             >
-              <span className="text-2xl">{s.emoji}</span>
+              <img src={s.icon} alt={s.label} className="w-8 h-8 object-contain" />
               <span className="text-white">{s.label}</span>
             </motion.a>
           ))}
