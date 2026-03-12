@@ -164,7 +164,7 @@ export default function CheckoutModal() {
                         value={nick}
                         onChange={(e) => handleNickChange(e.target.value)}
                         placeholder="Ваш ник"
-                        className={`w-full px-4 py-3 border rounded-xl text-sm outline-none transition-all ${
+                        className={`w-full px-4 py-3 border rounded-xl text-sm outline-none transition-all text-slate-900 bg-white ${
                           nickError
                             ? "border-red-400 focus:border-red-500"
                             : "border-slate-200 focus:border-green-400"

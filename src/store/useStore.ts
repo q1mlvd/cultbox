@@ -55,6 +55,7 @@ export const PRODUCTS: Product[] = [
     nameColor: "#4ade80",
     gradient: "from-green-600 via-emerald-700 to-green-900",
     iconEmoji: "⭐",
+    iconUrl: "/vip.png",
     commands: [
       { cmd: "/craft", desc: "Открыть виртуальный верстак" },
       { cmd: "/hat", desc: "Одеть предмет на голову" },
@@ -72,6 +73,7 @@ export const PRODUCTS: Product[] = [
     nameColor: "#22d3ee",
     gradient: "from-cyan-600 via-teal-700 to-cyan-900",
     iconEmoji: "🐉",
+    iconUrl: "/dragon.png",
     commands: [
       { cmd: "/ec", desc: "Виртуальный Эндер-сундук" },
       { cmd: "/kit dragon", desc: "Собственный набор" },
@@ -89,6 +91,7 @@ export const PRODUCTS: Product[] = [
     nameColor: "#60a5fa",
     gradient: "from-blue-500 via-blue-700 to-indigo-900",
     iconEmoji: "💎",
+    iconUrl: "/Diamond.webp",
     commands: [
       { cmd: "/checkonline [ник]", desc: "Последний заход на сервер" },
       { cmd: "/checkmute [ник]", desc: "Замучен ли игрок" },
@@ -105,7 +108,7 @@ export const PRODUCTS: Product[] = [
   {
     id: "emerald",
     name: "EMERALD",
-    iconUrl: "https://funtime.su/assets/img/items/70.png",
+    iconUrl: "/EMERALD.png",
     nameColor: "#34d399",
     gradient: "from-emerald-500 via-green-700 to-emerald-900",
     iconEmoji: "🟢",
@@ -123,7 +126,7 @@ export const PRODUCTS: Product[] = [
   {
     id: "netherite",
     name: "NETHERITE",
-    iconUrl: "https://funtime.su/assets/img/items/201.png",
+    iconUrl: "/NETHERITE.png",
     nameColor: "#a78bfa",
     gradient: "from-slate-600 via-purple-900 to-slate-900",
     iconEmoji: "🔱",
@@ -144,6 +147,7 @@ export const PRODUCTS: Product[] = [
     nameColor: "#e879f9",
     gradient: "from-fuchsia-600 via-purple-800 to-violet-900",
     iconEmoji: "👑",
+    iconUrl: "/Custom.png",
     commands: [
       { cmd: "/mute [ник] [время] [причина]", desc: "Замутить игрока" },
       { cmd: "/kit custom", desc: "Собственный набор" },
