@@ -1,15 +1,18 @@
 require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
+const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 
 const TOKEN    = process.env.BOT_TOKEN;
-const GROUP_ID = Number(process.env.GROUP_ID);
+const GROUP_ID = process.env.GROUP_ID; // строка, не число — избегаем потери точности
 
 if (!TOKEN || !GROUP_ID) {
   console.error("❌ Укажи BOT_TOKEN и GROUP_ID в файле .env");
   process.exit(1);
 }
+
+console.log("GROUP_ID:", GROUP_ID);
 
 const bot = new TelegramBot(TOKEN, { polling: true });
 
@@ -71,11 +74,12 @@ async function getOrCreateTopic(userId, from) {
   const color = topicColors[userId % topicColors.length];
 
   try {
-    const topic = await bot._request("createForumTopic", {
+    const res = await axios.post(`https://api.telegram.org/bot${TOKEN}/createForumTopic`, {
       chat_id: GROUP_ID,
       name: name.slice(0, 128),
       icon_color: color,
     });
+    const topic = res.data.result;
 
     const threadId = topic.message_thread_id;
     sessions.userToTopic.set(userId, threadId);
@@ -93,7 +97,7 @@ async function getOrCreateTopic(userId, from) {
 
     return threadId;
   } catch (err) {
-    console.error("Ошибка создания темы:", err.message);
+    console.error("Ошибка создания темы:", err.message, err.response?.body);
     return null;
   }
 }
@@ -195,7 +199,7 @@ bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
 
   // ── Сообщение из группы (ответ админа) ──
-  if (chatId === GROUP_ID) {
+  if (String(chatId) === String(GROUP_ID)) {
     const threadId = msg.message_thread_id;
     if (!threadId) return;
 
@@ -221,19 +225,20 @@ bot.on("message", async (msg) => {
   try {
     const threadId = await getOrCreateTopic(chatId, msg.from);
     if (!threadId) {
-      return bot.sendMessage(chatId, "⚠️ Произошла ошибка. Попробуй позже.");
+      return bot.sendMessage(chatId,
+        `⚠️ <b>Ошибка:</b> не удалось создать тему в группе.\n\nПроверь что бот является администратором группы с правом управления темами, и что в группе включён режим <b>Форум</b>.`,
+        { parse_mode: "HTML" }
+      );
     }
 
     await forwardToGroup(threadId, msg.from, msg);
 
-    // Подтверждение только на первое сообщение (если тема только что создана)
-    const isNew = !sessions.userToTopic.has(chatId - 1);
     await bot.sendMessage(chatId,
       `✅ <b>Сообщение получено!</b>\n\nАдминистратор ответит тебе в ближайшее время.`,
       { parse_mode: "HTML" }
     );
   } catch (err) {
-    console.error("Ошибка обработки сообщения:", err.message);
+    console.error("Ошибка обработки сообщения:", err.message, err.response?.body);
     bot.sendMessage(chatId, "⚠️ Произошла ошибка. Попробуй ещё раз.");
   }
 });
